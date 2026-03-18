@@ -1,62 +1,40 @@
 ---
-- name: Install and configure NGINX on all servers
-  hosts: tag_role_nginx
+- name: Install NGINX on Amazon Linux 2023
+  hosts:  tag_role_nginx
   become: yes
 
   vars:
-    nginx_package: nginx
+    ansible_python_interpreter: /usr/bin/python3
 
   tasks:
 
-    - name: Ensure Python3 is used (fix for AWX / modern systems)
-      set_fact:
-        ansible_python_interpreter: /usr/bin/python3
-
-    - name: Enable NGINX repo for Amazon Linux 2 (if required)
-      command: amazon-linux-extras install nginx1 -y
-      args:
-        warn: false
-      when: ansible_distribution == "Amazon" and ansible_distribution_major_version == "2"
-
-    - name: Install NGINX (cross-platform)
-      package:
-        name: "{{ nginx_package }}"
+    - name: Install NGINX using DNF
+      dnf:
+        name: nginx
         state: present
 
-    - name: Ensure NGINX service is enabled and started
+    - name: Start and enable NGINX
       service:
         name: nginx
         state: started
         enabled: yes
 
-    - name: Open HTTP port in firewalld (RHEL/CentOS)
+    - name: Open HTTP port (if firewalld is running)
       firewalld:
         service: http
         permanent: yes
         state: enabled
         immediate: yes
-      when: ansible_os_family == "RedHat"
+      ignore_errors: yes
 
-    - name: Open HTTP port in UFW (Ubuntu/Debian)
-      ufw:
-        rule: allow
-        name: "Nginx Full"
-      when: ansible_os_family == "Debian"
-
-    - name: Create a custom index.html page
+    - name: Create test page
       copy:
-        content: |
-          <html>
-          <head><title>NGINX Setup</title></head>
-          <body>
-            <h1>NGINX is successfully installed!</h1>
-            <p>Server: {{ inventory_hostname }}</p>
-          </body>
-          </html>
         dest: /usr/share/nginx/html/index.html
-        mode: '0644'
+        content: |
+          <h1>NGINX on Amazon Linux 2023</h1>
+          <p>{{ inventory_hostname }}</p>
 
-    - name: Restart NGINX to apply changes
+    - name: Restart NGINX
       service:
         name: nginx
         state: restarted
