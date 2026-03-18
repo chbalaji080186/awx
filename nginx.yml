@@ -1,6 +1,6 @@
 ---
 - name: Install and configure NGINX
-  hosts: tag_role_awx
+  hosts: tag_role_nginx
   become: yes
 
   tasks:
