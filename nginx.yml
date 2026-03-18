@@ -1,29 +1,35 @@
 ---
-- name: Install and configure NGINX
+- name: Install and configure NGINX on all servers
   hosts: tag_role_nginx
   become: yes
 
+  vars:
+    nginx_package: nginx
+
   tasks:
-    - name: Install NGINX on Debian/Ubuntu
-      apt:
-        name: nginx
-        state: present
-        update_cache: yes
-      when: ansible_os_family == "Debian"
 
-    - name: Install NGINX on RHEL/CentOS/Amazon Linux
-      yum:
-        name: nginx
-        state: present
-      when: ansible_os_family == "RedHat"
+    - name: Ensure Python3 is used (fix for AWX / modern systems)
+      set_fact:
+        ansible_python_interpreter: /usr/bin/python3
 
-    - name: Ensure NGINX is started and enabled
+    - name: Enable NGINX repo for Amazon Linux 2 (if required)
+      command: amazon-linux-extras install nginx1 -y
+      args:
+        warn: false
+      when: ansible_distribution == "Amazon" and ansible_distribution_major_version == "2"
+
+    - name: Install NGINX (cross-platform)
+      package:
+        name: "{{ nginx_package }}"
+        state: present
+
+    - name: Ensure NGINX service is enabled and started
       service:
         name: nginx
         state: started
         enabled: yes
 
-    - name: Allow HTTP (port 80) in firewalld (RHEL-based)
+    - name: Open HTTP port in firewalld (RHEL/CentOS)
       firewalld:
         service: http
         permanent: yes
@@ -31,8 +37,26 @@
         immediate: yes
       when: ansible_os_family == "RedHat"
 
-    - name: Allow HTTP (port 80) in UFW (Debian-based)
+    - name: Open HTTP port in UFW (Ubuntu/Debian)
       ufw:
         rule: allow
         name: "Nginx Full"
       when: ansible_os_family == "Debian"
+
+    - name: Create a custom index.html page
+      copy:
+        content: |
+          <html>
+          <head><title>NGINX Setup</title></head>
+          <body>
+            <h1>NGINX is successfully installed!</h1>
+            <p>Server: {{ inventory_hostname }}</p>
+          </body>
+          </html>
+        dest: /usr/share/nginx/html/index.html
+        mode: '0644'
+
+    - name: Restart NGINX to apply changes
+      service:
+        name: nginx
+        state: restarted
