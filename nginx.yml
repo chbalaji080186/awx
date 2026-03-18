@@ -1,0 +1,38 @@
+---
+- name: Install and configure NGINX
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install NGINX on Debian/Ubuntu
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install NGINX on RHEL/CentOS/Amazon Linux
+      yum:
+        name: nginx
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Ensure NGINX is started and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Allow HTTP (port 80) in firewalld (RHEL-based)
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+        immediate: yes
+      when: ansible_os_family == "RedHat"
+
+    - name: Allow HTTP (port 80) in UFW (Debian-based)
+      ufw:
+        rule: allow
+        name: "Nginx Full"
+      when: ansible_os_family == "Debian"
