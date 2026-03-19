@@ -1,0 +1,3 @@
+files
+
+Files for use with the copy resource and script files for use with the script resource.

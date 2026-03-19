@@ -1,40 +1,6 @@
----
 - name: Install NGINX on Amazon Linux 2023
-  hosts:  tag_role_nginx
+  hosts: tag_role_nginx
   become: yes
 
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
-
-  tasks:
-
-    - name: Install NGINX using DNF
-      dnf:
-        name: nginx
-        state: present
-
-    - name: Start and enable NGINX
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-
-    - name: Open HTTP port (if firewalld is running)
-      firewalld:
-        service: http
-        permanent: yes
-        state: enabled
-        immediate: yes
-      ignore_errors: yes
-
-    - name: Create test page
-      copy:
-        dest: /usr/share/nginx/html/index.html
-        content: |
-          <h1>NGINX on Amazon Linux 2023</h1>
-          <p>{{ inventory_hostname }}</p>
-
-    - name: Restart NGINX
-      service:
-        name: nginx
-        state: restarted
+  roles:
+    - nginx
