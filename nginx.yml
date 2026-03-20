@@ -1,5 +1,5 @@
 - name: Install NGINX on Amazon Linux 2023
-  hosts: tag_role_nginx
+  hosts: tag_role_demonginx
   become: yes
 
   roles:
